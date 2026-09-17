@@ -6,7 +6,7 @@ import androidx.car.app.Session
 
 class IbizaSession : Session() {
     override fun onCreateScreen(intent: Intent): Screen {
-        // Aquí le decimos que arranque nuestro nuevo lienzo GT3
+        // Here we tell it to launch our new GT3 canvas
         return MainScreen(carContext)
     }
 }

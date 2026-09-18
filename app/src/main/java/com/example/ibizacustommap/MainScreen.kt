@@ -26,6 +26,7 @@ import com.example.ibizacustommap.BuildConfig
 
 class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
 
+    // [Spanish] (modoSimulacion, simulationMode)
     private var modoSimulacion = false
     private var obdManager: ObdManager? = null
     private var obdThread: Thread? = null
@@ -48,7 +49,7 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
     private var maf: Float = 10f
 
     // VARIABLES CHIVATO DEBUG
-    private var debugRawResponse: String = "ESPERANDO..."
+    private var debugRawResponse: String = "WAITING..."
     private var debugMafRaw: String = "-"
     private var debugAfrRaw: String = "-"
 
@@ -59,8 +60,8 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
     private val renderHandler = Handler(renderThread.looper)
     private val redrawRunnable = Runnable { performRedrawSurface() }
 
-    // Snapshot inmutable de telemetría para el hilo de render.
-    // Evita leer directamente las vars mutadas por el hilo OBD sin lock.
+    // Immutable telemetry snapshot for the render thread.
+    // Avoids reading directly the vars mutated by the OBD thread without a lock.
     private data class TelemetrySnapshot(
         val speedKmh: Float,
         val gearDisplay: String,
@@ -125,7 +126,7 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
                 obdManager = ObdManager(carContext)
             }
 
-            Log.d(TAG, "Iniciando búsqueda de adaptador OBD2...")
+            Log.d(TAG, "Starting search for OBD2 adapter...")
             var attempts = 0
             var connected = false
 
@@ -140,9 +141,9 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
             modoSimulacion = !connected
 
             if (modoSimulacion) {
-                Log.d(TAG, "Activando MODO SIMULACIÓN automático.")
+                Log.d(TAG, "Activating automatic SIMULATION MODE.")
             } else {
-                Log.d(TAG, "¡OBD2 Conectado! Ejecutando rutina de inicialización estricta.")
+                Log.d(TAG, "OBD2 Connected! Running strict initialization routine.")
                 try {
                     obdManager?.sendCommand("ATZ")
                     Thread.sleep(800)
@@ -164,17 +165,18 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
                     Thread.sleep(500)
                     obdManager?.readResponse()
 
-                    // Sin ATSH7E0: dejamos que ATSP0 autodetecte protocolo
-                    // contra la dirección funcional por defecto.
+                    // Without ATSH7E0: we let ATSP0 auto-detect the protocol
+                    // against the default functional address.
 
                     obdManager?.sendCommand("ATDPN")
                     Thread.sleep(300)
+                    // [Spanish] (protocoloDetectado, detectedProtocol)
                     val protocoloDetectado = obdManager?.readResponse() ?: "?"
-                    Log.d(TAG, "Protocolo autodetectado (ATDPN): $protocoloDetectado")
+                    Log.d(TAG, "Auto-detected protocol (ATDPN): $protocoloDetectado")
 
-                    Log.d(TAG, "Inicialización completada. Empezando a pedir datos...")
+                    Log.d(TAG, "Initialization complete. Starting to request data...")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error iniciando el chip ELM327: ${e.message}")
+                    Log.e(TAG, "Error starting the ELM327 chip: ${e.message}")
                     modoSimulacion = true
                 }
             }
@@ -188,10 +190,10 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
                 }
 
                 try {
-                    // --- CARRIL RÁPIDO ---
+                    // --- FAST LANE ---
 
                     obdManager?.sendCommand("01 0C")
-                    val rawRpm = obdManager?.readResponse() ?: "VACIO"
+                    val rawRpm = obdManager?.readResponse() ?: "EMPTY"
                     val rpmCalc = ObdDecoder.parseRPM(rawRpm)
 
                     synchronized(telemetryLock) {
@@ -226,7 +228,7 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
                         }
                     }
 
-                    // --- CARRIL LENTO ---
+                    // --- SLOW LANE ---
                     var newOil = oilTemp
                     var newIntake = intakeTemp
                     var newLoad = engineLoad
@@ -261,24 +263,24 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
                         if (loadC >= 0f) newLoad = loadC
                         Thread.sleep(40)
 
-                        // MAF: timeout corto (FAST_TIMEOUT_MS). Si tu ECU no lo
-                        // soporta, no queremos que arrastre 1.5s el bucle entero.
+                        // MAF: short timeout (FAST_TIMEOUT_MS). If your ECU does not
+                        // support it, we don't want it to drag the whole loop by 1.5s.
                         obdManager?.sendCommand("01 10")
-                        val rawMaf = obdManager?.readResponse(ObdManager.FAST_TIMEOUT_MS) ?: "VACIO"
+                        val rawMaf = obdManager?.readResponse(ObdManager.FAST_TIMEOUT_MS) ?: "EMPTY"
                         val mafC = ObdDecoder.parseMAF(rawMaf).toFloat()
                         synchronized(telemetryLock) { debugMafRaw = rawMaf }
                         if (mafC >= 0f) newMaf = mafC
                         Thread.sleep(40)
 
-                        // AFR: primero PID 44 (Commanded Equivalence Ratio).
-                        // Si no responde, fallback a PID 34 (O2 Sensor Equivalence Ratio).
+                        // AFR: first PID 44 (Commanded Equivalence Ratio).
+                        // If it does not respond, fall back to PID 34 (O2 Sensor Equivalence Ratio).
                         obdManager?.sendCommand("01 44")
-                        var rawAfr = obdManager?.readResponse(ObdManager.FAST_TIMEOUT_MS) ?: "VACIO"
+                        var rawAfr = obdManager?.readResponse(ObdManager.FAST_TIMEOUT_MS) ?: "EMPTY"
                         var afrC = ObdDecoder.parseAFR(rawAfr, "44")
                         if (afrC <= 0.0) {
                             Thread.sleep(40)
                             obdManager?.sendCommand("01 34")
-                            rawAfr = obdManager?.readResponse(ObdManager.FAST_TIMEOUT_MS) ?: "VACIO"
+                            rawAfr = obdManager?.readResponse(ObdManager.FAST_TIMEOUT_MS) ?: "EMPTY"
                             afrC = ObdDecoder.parseAFR(rawAfr, "34")
                         }
                         synchronized(telemetryLock) { debugAfrRaw = rawAfr }
@@ -308,7 +310,7 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
                     Thread.sleep(50)
 
                 } catch (e: Exception) {
-                    Log.e(TAG, "Conexión OBD2 perdida en marcha: ${e.message}")
+                    Log.e(TAG, "OBD2 connection lost while running: ${e.message}")
                     obdManager?.closeConnection()
                     modoSimulacion = true
                 }
@@ -639,15 +641,15 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
             canvas.drawText(item.value, rightMargin - unitWidth - spaceBetween, slotRect.centerY() + height * 0.010f, numberPaint)
         }
 
-        // FIX: la temperatura de aceite ya no marca rojo por defecto cuando
-        // el motor está frío/templado. Rojo solo en sobrecalentamiento real
-        // o si el sensor da un valor claramente erróneo.
+        // FIX: the oil temperature no longer shows red by default when the
+        // engine is cold/warming up. Red only for actual overheating or
+        // if the sensor gives a clearly erroneous value.
         val oilColor = when {
             s.oilTemp >= 120f -> ALERT_RED
             s.oilTemp >= 110f -> ACCENT_ORANGE
             s.oilTemp in 70f..110f -> TEXT_WHITE
-            s.oilTemp in 20f..70f -> ACCENT_ORANGE // motor calentando, aviso suave
-            else -> TEXT_GRAY // valor fuera de rango físico razonable
+            s.oilTemp in 20f..70f -> ACCENT_ORANGE // engine warming up, soft warning
+            else -> TEXT_GRAY // value outside a reasonable physical range
         }
 
         val boostColor = when {
@@ -721,10 +723,10 @@ class MainScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
         }
 
         // =====================================================
-        // CHIVATO DEBUG — esquina superior izquierda, pequeño,
-        // fuera de zona de datos. Solo visible en builds de debug.
-        // Ahora incluye MAF y AFR crudos para diagnosticar PIDs
-        // no soportados.
+        // DEBUG INDICATOR — top-left corner, small,
+        // outside the data zone. Only visible in debug builds.
+        // Now includes raw MAF and AFR to diagnose unsupported
+        // PIDs.
         // =====================================================
         if (BuildConfig.DEBUG) {
             val debugPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {

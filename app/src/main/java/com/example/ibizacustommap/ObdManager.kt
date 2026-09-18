@@ -16,7 +16,7 @@ class ObdManager(private val context: Context) {
         private const val TAG = "ObdManager"
         private val OBD_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
         const val DEFAULT_TIMEOUT_MS = 1500L
-        const val FAST_TIMEOUT_MS = 500L // Para PIDs opcionales que pueden no estar soportados
+        const val FAST_TIMEOUT_MS = 500L // For optional PIDs that may not be supported
     }
 
     private var bluetoothAdapter: BluetoothAdapter? = null
@@ -35,7 +35,7 @@ class ObdManager(private val context: Context) {
     @SuppressLint("MissingPermission")
     fun connect(): Boolean {
         if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
-            Log.e(TAG, "Bluetooth apagado o no disponible.")
+            Log.e(TAG, "Bluetooth is off or unavailable.")
             return false
         }
 
@@ -51,7 +51,7 @@ class ObdManager(private val context: Context) {
         if (obdDevice == null) return false
 
         return try {
-            Log.d(TAG, "Conectando a: ${obdDevice.name}...")
+            Log.d(TAG, "Connecting to: ${obdDevice.name}...")
             socket = obdDevice.createRfcommSocketToServiceRecord(OBD_UUID)
             bluetoothAdapter?.cancelDiscovery()
             socket?.connect()
@@ -60,10 +60,10 @@ class ObdManager(private val context: Context) {
             outputStream = socket?.outputStream
             isConnected = true
 
-            Log.d(TAG, "Túnel abierto. No inicializamos aquí, lo hará MainScreen.")
+            Log.d(TAG, "Tunnel open. We do not initialize here, MainScreen will do it.")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Fallo al conectar: ${e.message}")
+            Log.e(TAG, "Failed to connect: ${e.message}")
             closeConnection()
             false
         }
@@ -75,21 +75,21 @@ class ObdManager(private val context: Context) {
             inputStream?.close()
             outputStream?.close()
             isConnected = false
-            Log.d(TAG, "Conexión cerrada.")
+            Log.d(TAG, "Connection closed.")
         } catch (e: Exception) {
-            Log.e(TAG, "Error cerrando: ${e.message}")
+            Log.e(TAG, "Error closing: ${e.message}")
         }
     }
 
     fun sendCommand(command: String) {
         if (!isConnected || outputStream == null) return
         try {
-            Log.d(TAG, "TX (Enviando): $command")
+            Log.d(TAG, "TX (Sending): $command")
             val cmdWithReturn = "$command\r"
             outputStream?.write(cmdWithReturn.toByteArray())
             outputStream?.flush()
         } catch (e: Exception) {
-            Log.e(TAG, "Error enviando comando: ${e.message}")
+            Log.e(TAG, "Error sending command: ${e.message}")
             closeConnection()
         }
     }
@@ -111,18 +111,18 @@ class ObdManager(private val context: Context) {
                     responseBuilder.append(chunk)
 
                     if (chunk.contains(">")) {
-                        break // Fin de la lectura correcta
+                        break // End of successful read
                     }
                 } else {
-                    Thread.sleep(10) // Evita saturar el procesador mientras espera
+                    Thread.sleep(10) // Avoid saturating the CPU while waiting
                 }
             }
 
             val rawResponse = responseBuilder.toString()
-            Log.d(TAG, "RX (Respuesta cruda): $rawResponse")
+            Log.d(TAG, "RX (Raw response): $rawResponse")
 
             if (!rawResponse.contains(">")) {
-                Log.w(TAG, "¡TIMEOUT! El escáner no devolvió '>' a tiempo.")
+                Log.w(TAG, "TIMEOUT! The scanner did not return '>' in time.")
                 return "TIMEOUT"
             }
 
@@ -138,12 +138,12 @@ class ObdManager(private val context: Context) {
                 .replace("BUS INIT", "")
                 .trim()
 
-            Log.d(TAG, "RX (Respuesta limpia): $cleanResponse")
+            Log.d(TAG, "RX (Clean response): $cleanResponse")
 
             return cleanResponse
 
         } catch (e: Exception) {
-            Log.e(TAG, "Error leyendo: ${e.message}")
+            Log.e(TAG, "Error reading: ${e.message}")
             closeConnection()
             return "ERROR"
         }

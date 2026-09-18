@@ -17,7 +17,7 @@ class IbizaCarService : CarAppService() {
         }
     }
 
-    // Aquí le decimos qué sesión arrancar cuando nos conectamos al coche
+    // Here we tell it which session to start when we connect to the car
     override fun onCreateSession(): Session {
         return IbizaSession()
     }

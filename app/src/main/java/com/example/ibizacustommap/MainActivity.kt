@@ -23,7 +23,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 
 class MainActivity : ComponentActivity() {
 
-    // 1. DICCIONARIO DE PERMISOS: Según la edad del móvil, pide unos u otros.
+    // 1. PERMISSIONS SET: Depending on the phone's OS version, request different ones.
     private val requiredPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         arrayOf(
             Manifest.permission.BLUETOOTH_SCAN,
@@ -43,18 +43,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            // Variable que vigila si ya nos han dado el "Sí"
+            // Variable that tracks whether we have already gotten a "Yes"
             var permissionsGranted by remember { mutableStateOf(checkPermissions()) }
 
-            // Lanzador del Pop-up de Android
+            // Launcher for the Android permission pop-up
             val permissionLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestMultiplePermissions()
             ) { permissionsMap ->
-                // Comprobamos si el usuario ha aceptado TODOS los permisos que pedimos
+                // Check whether the user has accepted ALL the permissions we requested
                 permissionsGranted = permissionsMap.values.all { it == true }
             }
 
-            // Llamamos a la pantalla visual pasándole el estado y el botón de pedir permisos
+            // Call the visual screen passing it the state and the button to request permissions
             MainAppScreen(
                 permissionsGranted = permissionsGranted,
                 onRequestPermissions = { permissionLauncher.launch(requiredPermissions) }
@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Función que comprueba silenciosamente cómo están los permisos
+    // Function that silently checks the status of the permissions
     private fun checkPermissions(): Boolean {
         return requiredPermissions.all {
             ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
@@ -71,15 +71,15 @@ class MainActivity : ComponentActivity() {
 }
 
 // ====================================================================
-// EL DISEÑO DE LA PANTALLA (Minimalista Blanco/Negro)
+// THE SCREEN DESIGN (Minimalist Black/White)
 // ====================================================================
 @Composable
 fun MainAppScreen(permissionsGranted: Boolean, onRequestPermissions: () -> Unit) {
 
-    val backgroundColor = Color(0xFF040404) // Negro casi absoluto
-    val textColor = Color(0xFFF0F0F0)       // Blanco roto
-    val mutedText = Color(0xFF7A7A7A)       // Gris sutil para estado
-    val seatRed = Color(0xFFB40000)         // Conservado solo para el botón de permisos
+    val backgroundColor = Color(0xFF040404) // Near-absolute black
+    val textColor = Color(0xFFF0F0F0)       // Off-white
+    val mutedText = Color(0xFF7A7A7A)       // Subtle gray for status text
+    val seatRed = Color(0xFFB40000)         // Kept only for the permissions button
 
     Column(
         modifier = Modifier
@@ -89,22 +89,22 @@ fun MainAppScreen(permissionsGranted: Boolean, onRequestPermissions: () -> Unit)
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // LOGO DE SEAT NUEVO (Sin textos adicionales)
+        // NEW SEAT LOGO (No additional text)
         androidx.compose.foundation.Image(
             painter = androidx.compose.ui.res.painterResource(id = R.drawable.seat_logo),
-            contentDescription = "Logo de Seat",
-            modifier = Modifier.fillMaxWidth(0.7f), // Ocupará el 70% del ancho de la pantalla
-            // Si quieres que el logo (S plateada y letras rojas) se vuelva 100% BLANCO PURO
-            // para mantener la estética estricta, descomenta la siguiente línea quitando las dos barras (//):
+            contentDescription = "Seat Logo",
+            modifier = Modifier.fillMaxWidth(0.7f), // Will occupy 70% of the screen width
+            // If you want the logo (silver S and red letters) to become 100% PURE WHITE
+            // to keep the strict aesthetic, uncomment the following line by removing the two slashes (//):
             // colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White)
         )
 
         Spacer(modifier = Modifier.height(80.dp))
 
-        // LÓGICA DE LA INTERFAZ
+        // UI LOGIC
         if (permissionsGranted) {
             Text(
-                text = "ESPERANDO CONEXIÓN OBD2...",
+                text = "WAITING FOR OBD2 CONNECTION...",
                 color = textColor,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
@@ -112,21 +112,21 @@ fun MainAppScreen(permissionsGranted: Boolean, onRequestPermissions: () -> Unit)
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Permisos de sistema: OK",
+                text = "System permissions: OK",
                 color = mutedText,
                 fontSize = 12.sp
             )
         } else {
             Text(
-                text = "ACCESO REQUERIDO",
-                color = textColor, // Cambiado a blanco para no ser hortera
+                text = "ACCESS REQUIRED",
+                color = textColor, // Changed to white to keep it understated
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Para interceptar la centralita y conectar con el adaptador OBD2, es vital habilitar el acceso Bluetooth.",
+                text = "To interface with the ECU and connect to the OBD2 adapter, enabling Bluetooth access is essential.",
                 color = mutedText,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
@@ -141,7 +141,7 @@ fun MainAppScreen(permissionsGranted: Boolean, onRequestPermissions: () -> Unit)
                     .height(50.dp)
             ) {
                 Text(
-                    text = "VINCULAR SISTEMAS",
+                    text = "LINK SYSTEMS",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp

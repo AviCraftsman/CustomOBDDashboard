@@ -40,7 +40,7 @@ object ObdDecoder {
         if (!response.startsWith("410B") || response.length < 6) return -999.0
         return try {
             val a = response.substring(4, 6).toInt(16)
-            // Aproximación: asume presión atmosférica de referencia = 100 kPa.
+            // Approximation: assumes a reference atmospheric pressure of 100 kPa.
             val boostKpa = a - 100.0
             boostKpa / 100.0
         } catch (e: Exception) { -999.0 }
@@ -53,8 +53,8 @@ object ObdDecoder {
         } catch (e: Exception) { -1 }
     }
 
-    // pid: "44" = Commanded Equivalence Ratio (estándar Mode 01)
-    //      "34" = O2 Sensor 1 Equivalence Ratio (fallback si 44 no está soportado)
+    // pid: "44" = Commanded Equivalence Ratio (standard Mode 01)
+    //      "34" = O2 Sensor 1 Equivalence Ratio (fallback if 44 is not supported)
     fun parseAFR(response: String, pid: String = "44"): Double {
         if (!response.startsWith("41$pid") || response.length < 8) return -1.0
         return try {
@@ -65,7 +65,7 @@ object ObdDecoder {
         } catch (e: Exception) { -1.0 }
     }
 
-    // PID 0E: Timing Advance. Útil en conducción deportiva (avance de encendido).
+    // PID 0E: Timing Advance. Useful in spirited driving (ignition advance).
     fun parseTimingAdvance(response: String): Int {
         if (!response.startsWith("410E") || response.length < 6) return -999
         return try {
@@ -74,7 +74,7 @@ object ObdDecoder {
         } catch (e: Exception) { -999 }
     }
 
-    // PID 33: Barometric Pressure (kPa). Útil para corregir lecturas de boost.
+    // PID 33: Barometric Pressure (kPa). Useful for correcting boost readings.
     fun parseBarometricPressure(response: String): Int {
         if (!response.startsWith("4133") || response.length < 6) return -1
         return try {
@@ -91,7 +91,7 @@ object ObdDecoder {
         } catch (e: Exception) { -1 }
     }
 
-    // PID 1F: Run Time Since Engine Start (segundos). Útil para cronometrar sesiones.
+    // PID 1F: Run Time Since Engine Start (seconds). Useful for timing sessions.
     fun parseRunTime(response: String): Int {
         if (!response.startsWith("411F") || response.length < 8) return -1
         return try {
